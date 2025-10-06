@@ -1,4 +1,4 @@
-*.log
 *.csv
 *.txt
-venv/
+*.log
+*.json
