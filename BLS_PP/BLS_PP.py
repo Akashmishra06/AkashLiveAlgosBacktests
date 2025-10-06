@@ -1,9 +1,9 @@
-from backtestTools.util import calculate_mtm, limitCapital, generateReportFile
 from backtestTools.algoLogic import optOverNightAlgoLogic
 from backtestTools.histData import getFnoBacktestData
 from backtestTools.expiry import getExpiryData
+from backtestTools.util import calculate_mtm
+
 from datetime import datetime, time
-import pandas as pd
 
 
 class algoLogic(optOverNightAlgoLogic):
@@ -73,13 +73,9 @@ class algoLogic(optOverNightAlgoLogic):
                         exitType = f"ExpiryExit"
                         self.exitOrder(index, exitType)
 
-                    # elif (row['EntryPrice'] * 2) < row['CurrentPrice']:
-                    #     exitType = f"ExpiryExit"
-                    #     self.exitOrder(index, exitType)
-
             if (timeData-60 in df.index) and (self.openPnl.empty) and (self.humanTime.time() >= time(15, 21)):
 
-                putSym = self.getPutSym(self.timeData, baseSym, df.at[lastIndexTimeData[1], "c"],MonthlyExpiry, 0, 100)
+                putSym = self.getPutSym(self.timeData, baseSym, df.at[lastIndexTimeData[1], "c"], MonthlyExpiry, 0, 100)
                 data = None
 
                 try:
@@ -105,7 +101,7 @@ if __name__ == "__main__":
     strategyName = "BLS_PP"
     version = "v1"
 
-    startDate = datetime(2024, 4, 1, 9, 15)
+    startDate = datetime(2020, 4, 1, 9, 15)
     endDate = datetime(2025, 9, 30, 15, 30)
 
     algo = algoLogic(devName, strategyName, version)
@@ -118,10 +114,6 @@ if __name__ == "__main__":
     print("Calculating Daily Pnl")
 
     dr = calculate_mtm(closedPnl, fileDir, timeFrame="15Min", mtm=False, equityMarket=False)
-
-    limitCapital(closedPnl, fileDir, maxCapitalAmount=1000)
-
-    generateReportFile(dr, fileDir)
 
     endTime = datetime.now()
     print(f"Done. Ended in {endTime-startTime}")

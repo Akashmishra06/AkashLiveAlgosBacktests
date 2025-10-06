@@ -143,7 +143,7 @@ if __name__ == "__main__":
 
     global config
     config = ConfigParser()
-    config.read('/root/PSR/algo5/config.ini')
+    config.read('/root/AkashLiveAlgosBacktests/PSR/algo5/config.ini')
 
     devName = "AM"
     strategyName = config.get('PSR_3PM_N', 'algoName')
