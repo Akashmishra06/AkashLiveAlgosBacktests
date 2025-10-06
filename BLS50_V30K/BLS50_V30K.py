@@ -39,11 +39,6 @@ class BLS01_V50(baseAlgoLogic):
                 df.index = df.index + 33300
                 df = df[df.index > startTimeEpoch]
                 df_dict[stock] = df
-                df['date'] = pd.to_datetime(df['datetime']).dt.date
-                special_dates_df = pd.read_csv("/root/akashResearchAndDevelopment/liveEquityBacktestAlgos/BLS01_H50/expiryDateRange.csv")
-                special_dates = pd.to_datetime(special_dates_df['date']).dt.date
-                df['columnRange'] = df['date'].apply(lambda x: 'yes' if x in special_dates.values else '')
-                df_dict[stock] = df
                 df.to_csv(f"{self.fileDir['backtestResultsCandleData']}{stock}_df.csv")
                 print(f"Finished processing {stock}")
             else:
@@ -61,9 +56,8 @@ class BLS01_V50(baseAlgoLogic):
 
         df_dict = process_stocks_in_parallel(stocks, startTimeEpoch, endTimeEpoch)
 
-        amountPerTrade = 1000000
+        amountPerTrade = 100000
         lastIndexTimeData = None
-        ProfitAmount = 0
         TotalTradeCanCome = 50
         breakEven = {stock: False for stock in stocks}
 
@@ -80,8 +74,6 @@ class BLS01_V50(baseAlgoLogic):
                             stockAlgoLogic.openPnl.at[index, 'CurrentPrice'] = df_dict[stock].at[lastIndexTimeData, "c"]
                         except Exception as e:
                             logger.error(f"Error updating CurrentPrice for {stock}: {e}")
-                            # print(f"Error fetching historical data for {row['Symbol']}")
-                            # logger.error(f"Error fetching historical data for {row['Symbol']}")
                 stockAlgoLogic.pnlCalculator()
 
                 for index, row in stock_openPnl.iterrows():
@@ -119,14 +111,6 @@ class BLS01_V50(baseAlgoLogic):
                 lastIndexTimeData = timeData
                 stockAlgoLogic.pnlCalculator()
 
-            if lastIndexTimeData is not None:   
-                if df_dict[stock].at[lastIndexTimeData, "columnRange"] == "yes":
-                    combined_df = stockAlgoLogic.openPnl.copy()
-                    expiryValue = (combined_df['CurrentPrice'] * combined_df['Quantity']).sum()
-                    output_string = f"{df_dict[stock].at[lastIndexTimeData, 'datetime']}, {TotalTradeCanCome}, {expiryValue}\n"
-                    with open('reposrrrtExpiry.txt', 'a') as file:
-                        file.write(output_string)
-
         for index, row in stockAlgoLogic.openPnl.iterrows():
             if lastIndexTimeData in df_dict[stock].index:
                 if index in stockAlgoLogic.openPnl.index:
@@ -142,8 +126,8 @@ if __name__ == "__main__":
     strategyName = "BLS01_V50"
     version = "v1"
 
-    startDate = datetime(2020, 1, 1, 9, 15)
-    endDate = datetime(2025, 4, 30, 15, 30)
+    startDate = datetime(2020, 4, 1, 9, 15)
+    endDate = datetime(2025, 9, 30, 15, 30)
 
     portfolio = f'{strategyName}_combinedList'
 
