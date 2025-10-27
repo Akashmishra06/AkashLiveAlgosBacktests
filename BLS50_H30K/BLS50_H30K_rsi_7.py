@@ -9,9 +9,9 @@ import pandas as pd
 import talib
 
 
-class BLS01_V50(baseAlgoLogic):
+class BLS01_H50(baseAlgoLogic):
     def runBacktest(self, portfolio, startDate, endDate):
-        if self.strategyName != "BLS01_V50":
+        if self.strategyName != "BLS01_H50":
             raise Exception("Strategy Name Mismatch")
         cprint(f"Backtesting: {self.strategyName} UID: {self.fileDirUid}", "green")
         first_stock = portfolio if portfolio and portfolio else None
@@ -23,6 +23,7 @@ class BLS01_V50(baseAlgoLogic):
         return self.fileDir["backtestResultsStrategyUid"], self.combinePnlCsv()
 
     def backtest(self, stockName, startDate, endDate):
+
         startTimeEpoch = startDate.timestamp()
         endTimeEpoch = endDate.timestamp()
         stockAlgoLogic = equityOverNightAlgoLogic(stockName, self.fileDir)
@@ -34,7 +35,7 @@ class BLS01_V50(baseAlgoLogic):
 
             if df is not None:
                 df['datetime'] = pd.to_datetime(df['datetime'])
-                df["rsi"] = talib.RSI(df["c"], timeperiod=14)
+                df["rsi"] = talib.RSI(df["c"], timeperiod=7)
                 df.dropna(inplace=True)
                 df.index = df.index + 33300
                 df = df[df.index > startTimeEpoch]
@@ -58,6 +59,7 @@ class BLS01_V50(baseAlgoLogic):
 
         amountPerTrade = 100000
         lastIndexTimeData = None
+        ProfitAmount = 0
         TotalTradeCanCome = 50
         breakEven = {stock: False for stock in stocks}
 
@@ -93,11 +95,16 @@ class BLS01_V50(baseAlgoLogic):
 
                             elif df_dict[stock].at[lastIndexTimeData, "rsi"] < 30 and df_dict[stock].at[lastIndexTimeData, "c"] > row['EntryPrice']:
                                 exitType = "RsiTargetHit"
-                                pnll = (((df_dict[stock].at[lastIndexTimeData, "c"] - row['EntryPrice']) * row['Quantity']) // 50)
-                                amountPerTrade = amountPerTrade + pnll
+                                pnll = (df_dict[stock].at[lastIndexTimeData, "c"] - row['EntryPrice']) * row['Quantity']
+                                ProfitAmount = ProfitAmount + pnll
                                 stockAlgoLogic.exitOrder(index, exitType, df_dict[stock].at[lastIndexTimeData, "c"])
                                 nowTotalTrades = len(stockAlgoLogic.openPnl)
-                                logger.info(f"{nowTotalTrades}, TotalTradeCanCome:- {TotalTradeCanCome},RsiTargetHit- Datetime: {stockAlgoLogic.humanTime}, Stock: {stock}, pnll: {pnll},amountPerTrade: {amountPerTrade}, exitPrice: {df_dict[stock].at[lastIndexTimeData, 'c']}")
+                                logger.info(f"{nowTotalTrades}, TotalTradeCanCome:- {TotalTradeCanCome},RsiTargetHit- Datetime: {stockAlgoLogic.humanTime}, Stock: {stock}, pnll: {pnll},ProfitAmount: {ProfitAmount}, exitPrice: {df_dict[stock].at[lastIndexTimeData, 'c']}")
+
+                if ProfitAmount > 100000:
+                    ProfitAmount = ProfitAmount - 100000
+                    TotalTradeCanCome = TotalTradeCanCome + 1
+                    logger.info(f"{nowTotalTrades}, TotalTradeCanCome:- {TotalTradeCanCome}, Datetime: {stockAlgoLogic.humanTime},ProfitAmount:-{ProfitAmount}")
 
                 if lastIndexTimeData in df_dict[stock].index:
                     nowTotalTrades = len(stockAlgoLogic.openPnl)
@@ -118,21 +125,19 @@ class BLS01_V50(baseAlgoLogic):
                     stockAlgoLogic.exitOrder(index, exitType, row['CurrentPrice'])
                     logger.info(f"Datetime: {stockAlgoLogic.humanTime}, Stock: {row['Symbol']}, exitPrice: {row['CurrentPrice']}")
 
-
 if __name__ == "__main__":
     startNow = datetime.now()
 
     devName = "AK"
-    strategyName = "BLS01_V50"
+    strategyName = "BLS01_H50"
     version = "v1"
 
     startDate = datetime(2020, 4, 1, 9, 15)
     endDate = datetime(2025, 10, 30, 15, 30)
 
-
     portfolio = f'{strategyName}_combinedList'
 
-    algoLogicObj = BLS01_V50(devName, strategyName, version)
+    algoLogicObj = BLS01_H50(devName, strategyName, version)
     fileDir, closedPnl = algoLogicObj.runBacktest(portfolio, startDate, endDate)
 
     dailyReport = calculate_mtm(closedPnl, fileDir, timeFrame="15T", mtm=False, equityMarket=True)

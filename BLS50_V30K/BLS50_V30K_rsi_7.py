@@ -34,7 +34,7 @@ class BLS01_V50(baseAlgoLogic):
 
             if df is not None:
                 df['datetime'] = pd.to_datetime(df['datetime'])
-                df["rsi"] = talib.RSI(df["c"], timeperiod=14)
+                df["rsi"] = talib.RSI(df["c"], timeperiod=7)
                 df.dropna(inplace=True)
                 df.index = df.index + 33300
                 df = df[df.index > startTimeEpoch]
