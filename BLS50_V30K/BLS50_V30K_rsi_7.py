@@ -11,7 +11,7 @@ import talib
 
 class BLS01_V50(baseAlgoLogic):
     def runBacktest(self, portfolio, startDate, endDate):
-        if self.strategyName != "BLS01_V50":
+        if self.strategyName != "BLS50_V30K_rsi_7":
             raise Exception("Strategy Name Mismatch")
         cprint(f"Backtesting: {self.strategyName} UID: {self.fileDirUid}", "green")
         first_stock = portfolio if portfolio and portfolio else None
@@ -123,10 +123,10 @@ if __name__ == "__main__":
     startNow = datetime.now()
 
     devName = "AK"
-    strategyName = "BLS01_V50"
+    strategyName = "BLS50_V30K_rsi_7"
     version = "v1"
 
-    startDate = datetime(2020, 4, 1, 9, 15)
+    startDate = datetime(2025, 1, 1, 9, 15)
     endDate = datetime(2025, 10, 30, 15, 30)
 
 

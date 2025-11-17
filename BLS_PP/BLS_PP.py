@@ -34,7 +34,7 @@ class algoLogic(optOverNightAlgoLogic):
         expiryEpoch= expiryDatetime.timestamp()
         lotSize = int(getExpiryData(self.timeData, baseSym)["LotSize"])
 
-        for timeData in df.index: 
+        for timeData in df.index:
 
             self.timeData = float(timeData)
             self.humanTime = datetime.fromtimestamp(timeData)
