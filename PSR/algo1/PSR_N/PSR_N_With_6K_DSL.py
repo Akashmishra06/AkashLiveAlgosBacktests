@@ -241,7 +241,7 @@ if __name__ == "__main__":
 
     global config
     config = ConfigParser()
-    config.read('/root/AkashLiveAlgosBacktests/PSR/algo1/config.ini')
+    config.read('/root/development/AkashLiveAlgosBacktests/PSR/algo1/config.ini')
 
     devName = "AM"
     strategyName = config.get('PSR_N_With_6K_DSL', 'algoName')

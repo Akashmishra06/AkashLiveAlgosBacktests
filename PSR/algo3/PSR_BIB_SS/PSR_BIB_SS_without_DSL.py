@@ -258,9 +258,9 @@ if __name__ == "__main__":
     strategyName = "PSR_BIB_SS_without_DSL"
     version = "v1"
 
-    startDate = datetime(2024, 1, 1, 9, 15)
-    endDate = datetime(2025, 9, 30, 15, 30)
 
+    startDate = datetime(2025, 7, 1, 9, 15)
+    endDate = datetime(2025, 10, 31, 15, 30)
     algo = algoLogic(devName, strategyName, version)
 
     baseSym = "SENSEX"
