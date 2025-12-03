@@ -22,7 +22,7 @@ class algoLogic(optOverNightAlgoLogic):
         try:
             df = getFnoBacktestData(indexSym, startEpoch, endEpoch, "1H")
             if df is None:
-                return            
+                return
         except Exception as e:
             self.strategyLogger.info(f"Data not found for {baseSym} in range {startDate} to {endDate}")
             raise Exception(e)

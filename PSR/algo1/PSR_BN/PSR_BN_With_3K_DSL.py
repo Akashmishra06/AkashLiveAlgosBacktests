@@ -108,13 +108,10 @@ class algoLogic(optOverNightAlgoLogic):
                     DayOverLimit = False
                 try:
                     underlying_price = df.at[lastIndexTimeData[1], "c"]
-
                     call_sym_atm = self.getCallSym(self.timeData, baseSym, underlying_price, Currentexpiry)
                     put_sym_atm = self.getPutSym(self.timeData, baseSym, underlying_price, Currentexpiry)
-
                     data_call_atm = self.fetchAndCacheFnoHistData(call_sym_atm, lastIndexTimeData[1])
                     data_put_atm = self.fetchAndCacheFnoHistData(put_sym_atm, lastIndexTimeData[1])
-
                 except Exception:
                     self.strategyLogger.info(f"{self.humanTime} premium Data Issue")
 

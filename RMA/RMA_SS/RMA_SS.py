@@ -2,10 +2,9 @@ from backtestTools.algoLogic import optOverNightAlgoLogic
 from backtestTools.histData import getFnoBacktestData
 from backtestTools.expiry import getExpiryData
 from backtestTools.util import calculate_mtm
-
-import talib
-import numpy as np
 from datetime import datetime, time
+import numpy as np
+import talib
 
 
 class algoLogic(optOverNightAlgoLogic):
@@ -22,7 +21,6 @@ class algoLogic(optOverNightAlgoLogic):
             raise Exception(e)
 
         df['rsi'] = talib.RSI(df['c'], timeperiod=14)
-
         df['callSell'] = np.where((df['rsi'] < 50) & (df['c'] < df['c'].shift(1)) & ((df['rsi'] > 30)), "callSell", "")
         df['putSell'] = np.where((df['rsi'] > 50) & (df['c'] > df['c'].shift(1)) & ((df['rsi'] < 70)), "putSell", "")
 

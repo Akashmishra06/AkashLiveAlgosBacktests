@@ -127,8 +127,7 @@ if __name__ == "__main__":
     version = "v1"
 
     startDate = datetime(2020, 4, 1, 9, 15)
-    endDate = datetime(2025, 10, 30, 15, 30)
-
+    endDate = datetime(2025, 11, 30, 15, 30)
 
     portfolio = f'{strategyName}_combinedList'
 
