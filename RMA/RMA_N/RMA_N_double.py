@@ -2,9 +2,10 @@ from backtestTools.algoLogic import optOverNightAlgoLogic
 from backtestTools.histData import getFnoBacktestData
 from backtestTools.expiry import getExpiryData
 from backtestTools.util import calculate_mtm
-from datetime import datetime, time
-import numpy as np
+
 import talib
+import numpy as np
+from datetime import datetime, time
 
 
 class algoLogic(optOverNightAlgoLogic):
@@ -21,6 +22,7 @@ class algoLogic(optOverNightAlgoLogic):
             raise Exception(e)
 
         df['rsi'] = talib.RSI(df['c'], timeperiod=14)
+
         df['callSell'] = np.where((df['rsi'] < 50) & (df['c'] < df['c'].shift(1)) & ((df['rsi'] > 30)), "callSell", "")
         df['putSell'] = np.where((df['rsi'] > 50) & (df['c'] > df['c'].shift(1)) & ((df['rsi'] < 70)), "putSell", "")
 
@@ -35,7 +37,6 @@ class algoLogic(optOverNightAlgoLogic):
         lotSize = int(getExpiryData(self.timeData, baseSym)["LotSize"])
         expiryDatetime = datetime.strptime(Currentexpiry, "%d%b%y").replace(hour=15, minute=20)
         expiryEpoch = expiryDatetime.timestamp()
-        avg_premium = None
 
         for timeData in df.index:
 
@@ -94,13 +95,17 @@ class algoLogic(optOverNightAlgoLogic):
                             exitType = f"Target"
                             self.exitOrder(index, exitType)
 
+                        elif (row['EntryPrice'] * 2) <= row['CurrentPrice']:
+                            exitType = f"StoplossHit"
+                            self.exitOrder(index, exitType)
+
                     except Exception as e:
                         self.strategyLogger.info(f"{self.humanTime} exit block Exception occurred: {e}")
 
             putTradeCounter = self.openPnl['Symbol'].str[-2:].value_counts().get('PE', 0)
             callTradeCounter = self.openPnl['Symbol'].str[-2:].value_counts().get('CE', 0)
 
-            if lastIndexTimeData[1] in df.index and self.humanTime.time() < time(15, 15) and self.humanTime.time() > time(9, 17):
+            if lastIndexTimeData[1] in df.index and self.humanTime.time() < time(15, 15) and self.humanTime.time() >= time(9, 17):
 
                 if df.at[lastIndexTimeData[1], "putSell"] == "putSell" and putTradeCounter == 0:
 
@@ -114,9 +119,7 @@ class algoLogic(optOverNightAlgoLogic):
                         data_put_atm = self.fetchAndCacheFnoHistData(put_sym_atm, lastIndexTimeData[1])
 
                         if data_call_atm is not None and data_put_atm is not None:
-                            avg_premium_1 = data_call_atm["c"] + data_put_atm["c"]
-                            avg_premium = avg_premium_1 * 0.1
-                            taking_price = avg_premium
+                            taking_price = (data_call_atm["c"] + data_put_atm["c"]) * 0.1
                             otm = 0
 
                             while otm <= 50:
@@ -131,7 +134,7 @@ class algoLogic(optOverNightAlgoLogic):
 
                                 if data is not None and data["c"] < taking_price:
                                     self.entryOrder(data["c"], putSym, lotSize, "SELL", {"Expiry": expiryEpoch})
-                                    self.strategyLogger.info(f"{self.humanTime}, SELL Entry order: {putSym}, entryPrice: {data['c']}")
+                                    self.strategyLogger.info(f"{self.humanTime}, SELL Entry order: {putSym}, entryPrice: {data['c']}, taking_price: {taking_price}")
                                     break
 
                                 otm += 1
@@ -149,9 +152,8 @@ class algoLogic(optOverNightAlgoLogic):
                         data_put_atm = self.fetchAndCacheFnoHistData(put_sym_atm, lastIndexTimeData[1])
 
                         if data_call_atm is not None and data_put_atm is not None:
-                            avg_premium_1 = data_call_atm["c"] + data_put_atm["c"]
-                            avg_premium = avg_premium_1 * 0.1
-                            taking_price = avg_premium
+
+                            taking_price = (data_call_atm["c"] + data_put_atm["c"]) * 0.1
                             otm = 0
 
                             while otm <= 50:
@@ -166,7 +168,7 @@ class algoLogic(optOverNightAlgoLogic):
 
                                 if data is not None and data["c"] < taking_price:
                                     self.entryOrder(data["c"], callSym, lotSize, "SELL", {"Expiry": expiryEpoch})
-                                    self.strategyLogger.info(f"{self.humanTime}, SELL Entry order: {callSym}, entryPrice: {data['c']}")
+                                    self.strategyLogger.info(f"{self.humanTime}, SELL Entry order: {callSym}, entryPrice: {data['c']}, taking_price: {taking_price}")
                                     break
 
                                 otm += 1
@@ -184,16 +186,16 @@ if __name__ == "__main__":
     startTime = datetime.now()
 
     devName = "AM"
-    strategyName = "RMA_SS"
+    strategyName = "RMA_N_double"
     version = "v1"
 
-    startDate = datetime(2024, 1, 1, 9, 15)
+    startDate = datetime(2020, 4, 1, 9, 15)
     endDate = datetime(2025, 11, 30, 15, 30)
 
     algo = algoLogic(devName, strategyName, version)
 
-    baseSym = "SENSEX"
-    indexName = "SENSEX"
+    baseSym = "NIFTY"
+    indexName = "NIFTY 50"
 
     closedPnl, fileDir = algo.run(startDate, endDate, baseSym, indexName)
 

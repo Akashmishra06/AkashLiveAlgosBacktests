@@ -101,7 +101,7 @@ class algoLogic(optOverNightAlgoLogic):
             putTradeCounter = self.openPnl['Symbol'].str[-2:].value_counts().get('PE', 0)
             callTradeCounter = self.openPnl['Symbol'].str[-2:].value_counts().get('CE', 0)
 
-            if lastIndexTimeData[1] in df.index and self.humanTime.time() < time(15, 15) and self.humanTime.time() > time(9, 17):
+            if lastIndexTimeData[1] in df.index and self.humanTime.time() < time(15, 15) and self.humanTime.time() >= time(9, 17):
 
                 if df.at[lastIndexTimeData[1], "putSell"] == "putSell" and putTradeCounter == 0:
 
@@ -185,8 +185,8 @@ if __name__ == "__main__":
     strategyName = "RMA_N"
     version = "v1"
 
-    startDate = datetime(2020, 4, 1, 9, 15)
-    endDate = datetime(2025, 9, 30, 15, 30)
+    startDate = datetime(2025, 11, 1, 9, 15)
+    endDate = datetime(2025, 11, 30, 15, 30)
 
     algo = algoLogic(devName, strategyName, version)
 
