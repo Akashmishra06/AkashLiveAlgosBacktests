@@ -284,7 +284,7 @@ if __name__ == "__main__":
 
     closedPnl, fileDir = algo.run(startDate, endDate, baseSym, indexName)
 
-    dr = calculate_mtm(closedPnl, fileDir, timeFrame="15Min", mtm=True, equityMarket=False)
+    dr = calculate_mtm(closedPnl, fileDir, timeFrame="1Min", mtm=True, equityMarket=False)
 
     endTime = datetime.now()
     print(f"Done. Ended in {endTime-startTime}")

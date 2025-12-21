@@ -12,6 +12,8 @@ class algoLogic(optOverNightAlgoLogic):
         col = ["Target", "Stoploss", "Expiry"]
         self.addColumnsToOpenPnlDf(col)
 
+        # self.addColumnsToOpenPnlDf(col)
+
         startEpoch = startDate.timestamp()
         endEpoch = endDate.timestamp()
 
