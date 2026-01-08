@@ -193,6 +193,9 @@ class algoLogic(optOverNightAlgoLogic):
             putCounter= tradecount.get('PE',0)
 
             if (timeEpochSubstract in df_15Min.index):
+                if not self.openPnl.empty:
+                    if not self.openPnl['Pnl'].sum() > 0:
+                        continue
 
                 if df_15Min.at[last15MinIndexTimeData[1], "StochRSI_K_Smoothed"] < 20:
                     stageOne_c = True
@@ -206,8 +209,8 @@ class algoLogic(optOverNightAlgoLogic):
                     stageOne_p = False
                     putEntry = True
 
-                if df_15Min.at[last15MinIndexTimeData[1], "putSell"] == "putSell" and df_15Min.at[last15MinIndexTimeData[1], "putStochCrossOver"] == "putStochCrossOver" and callCounter == 0 and putEntry and putCounter < 2:
-                    putSym = self.getPutSym(self.timeData, baseSym, df_15Min.at[last15MinIndexTimeData[1], "c"], MonthlyExpiry, 0, 100)
+                if df_15Min.at[last15MinIndexTimeData[1], "putSell"] == "putSell" and df_15Min.at[last15MinIndexTimeData[1], "putStochCrossOver"] == "putStochCrossOver" and callCounter == 0 and putEntry and putCounter <= 2:
+                    putSym = self.getPutSym(self.timeData, baseSym, df_15Min.at[last15MinIndexTimeData[1], "c"], MonthlyExpiry, 0, 500)
 
                     try:
                         data = self.fetchAndCacheFnoHistData(putSym, lastIndexTimeData[1])
@@ -215,9 +218,9 @@ class algoLogic(optOverNightAlgoLogic):
                         stoploss = 1.3 * data["c"]
 
                         otm = 0
-                        while data["c"] > 600:
+                        while data["c"] > 800:
                             otm += 1
-                            putSym = self.getPutSym(self.timeData, baseSym, df_15Min.at[last15MinIndexTimeData[1], "c"], MonthlyExpiry, otm, 100)
+                            putSym = self.getPutSym(self.timeData, baseSym, df_15Min.at[last15MinIndexTimeData[1], "c"], MonthlyExpiry, otm, 500)
                             data = self.fetchAndCacheFnoHistData(putSym, lastIndexTimeData[1])
                             target = 0.2 * data["c"]
                             stoploss = 1.3 * data["c"]
@@ -226,7 +229,7 @@ class algoLogic(optOverNightAlgoLogic):
                         otm = 0
                         while data["c"] < 100:
                             otm -= 1
-                            callSym = self.getCallSym(self.timeData, baseSym, df_15Min.at[last15MinIndexTimeData[1], "c"], MonthlyExpiry, otm, 100)
+                            callSym = self.getCallSym(self.timeData, baseSym, df_15Min.at[last15MinIndexTimeData[1], "c"], MonthlyExpiry, otm, 500)
                             data = self.fetchAndCacheFnoHistData(callSym, lastIndexTimeData[1])
                             target = 0.2 * data["c"]
                             stoploss = 1.3 * data["c"]
@@ -237,8 +240,8 @@ class algoLogic(optOverNightAlgoLogic):
                     except Exception as e:
                         self.strategyLogger.info(e)
 
-                elif df_15Min.at[last15MinIndexTimeData[1], "callSell"] == "callSell" and df_15Min.at[last15MinIndexTimeData[1], "callStochCrossOver"] == "callStochCrossOver" and putCounter == 0 and callEntry and callCounter < 2:
-                    callSym = self.getCallSym(self.timeData, baseSym, df_15Min.at[last15MinIndexTimeData[1], "c"], MonthlyExpiry, 0, 100)
+                elif df_15Min.at[last15MinIndexTimeData[1], "callSell"] == "callSell" and df_15Min.at[last15MinIndexTimeData[1], "callStochCrossOver"] == "callStochCrossOver" and putCounter == 0 and callEntry and callCounter <= 2:
+                    callSym = self.getCallSym(self.timeData, baseSym, df_15Min.at[last15MinIndexTimeData[1], "c"], MonthlyExpiry, 0, 500)
 
                     try:
                         data = self.fetchAndCacheFnoHistData(callSym, lastIndexTimeData[1])
@@ -246,9 +249,9 @@ class algoLogic(optOverNightAlgoLogic):
                         stoploss = 1.3 * data["c"]
 
                         otm = 0
-                        while data["c"] > 600:
+                        while data["c"] > 800:
                             otm += 1
-                            callSym = self.getCallSym(self.timeData, baseSym, df_15Min.at[last15MinIndexTimeData[1], "c"], MonthlyExpiry, otm, 100)
+                            callSym = self.getCallSym(self.timeData, baseSym, df_15Min.at[last15MinIndexTimeData[1], "c"], MonthlyExpiry, otm, 500)
                             data = self.fetchAndCacheFnoHistData(callSym, lastIndexTimeData[1])
                             target = 0.2 * data["c"]
                             stoploss = 1.3 * data["c"]
@@ -257,7 +260,7 @@ class algoLogic(optOverNightAlgoLogic):
                         otm = 0
                         while data["c"] < 100:
                             otm -= 1
-                            callSym = self.getCallSym(self.timeData, baseSym, df_15Min.at[last15MinIndexTimeData[1], "c"], MonthlyExpiry, otm, 100)
+                            callSym = self.getCallSym(self.timeData, baseSym, df_15Min.at[last15MinIndexTimeData[1], "c"], MonthlyExpiry, otm, 500)
                             data = self.fetchAndCacheFnoHistData(callSym, lastIndexTimeData[1])
                             target = 0.2 * data["c"]
                             stoploss = 1.3 * data["c"]
@@ -278,17 +281,17 @@ if __name__ == "__main__":
     startTime = datetime.now()
 
     devName = "AM"
-    strategyName = "MTP_M_N"
+    strategyName = "MTP_M_BN"
     version = "v1"
 
     startDate = datetime(2022, 1, 1, 9, 15)
-    endDate = datetime(2025, 12, 23, 15, 30)
+    endDate = datetime(2025, 10, 31, 15, 30)
 
     algo = algoLogic(devName, strategyName, version)
 
-    baseSym = "NIFTY"
-    indexName = "NIFTY 50"
-
+    baseSym = "BANKNIFTY"
+    indexName = "NIFTY BANK"
+ 
     closedPnl, fileDir = algo.run(startDate, endDate, baseSym, indexName)
 
     endTime = datetime.now()

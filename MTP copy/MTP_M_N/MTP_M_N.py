@@ -206,7 +206,7 @@ class algoLogic(optOverNightAlgoLogic):
                     stageOne_p = False
                     putEntry = True
 
-                if df_15Min.at[last15MinIndexTimeData[1], "putSell"] == "putSell" and df_15Min.at[last15MinIndexTimeData[1], "putStochCrossOver"] == "putStochCrossOver" and callCounter == 0 and putEntry and putCounter < 2:
+                if df_15Min.at[last15MinIndexTimeData[1], "putSell"] == "putSell" and df_15Min.at[last15MinIndexTimeData[1], "putStochCrossOver"] == "putStochCrossOver" and callCounter == 0 and putEntry and putCounter <= 2:
                     putSym = self.getPutSym(self.timeData, baseSym, df_15Min.at[last15MinIndexTimeData[1], "c"], MonthlyExpiry, 0, 100)
 
                     try:
@@ -237,7 +237,7 @@ class algoLogic(optOverNightAlgoLogic):
                     except Exception as e:
                         self.strategyLogger.info(e)
 
-                elif df_15Min.at[last15MinIndexTimeData[1], "callSell"] == "callSell" and df_15Min.at[last15MinIndexTimeData[1], "callStochCrossOver"] == "callStochCrossOver" and putCounter == 0 and callEntry and callCounter < 2:
+                elif df_15Min.at[last15MinIndexTimeData[1], "callSell"] == "callSell" and df_15Min.at[last15MinIndexTimeData[1], "callStochCrossOver"] == "callStochCrossOver" and putCounter == 0 and callEntry and callCounter <= 2:
                     callSym = self.getCallSym(self.timeData, baseSym, df_15Min.at[last15MinIndexTimeData[1], "c"], MonthlyExpiry, 0, 100)
 
                     try:

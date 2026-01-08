@@ -31,7 +31,7 @@ class BLS01_H50(baseAlgoLogic):
         logger.propagate = False
 
         def process_stock(stock, startTimeEpoch, endTimeEpoch, df_dict):
-            df = getEquityBacktestData(stock, startTimeEpoch - (86400 * 500), endTimeEpoch, "D")
+            df = getEquityBacktestData(stock, startTimeEpoch - (86400 * 500), endTimeEpoch, "1H")
 
             if df is not None:
                 df['datetime'] = pd.to_datetime(df['datetime'])
@@ -40,7 +40,7 @@ class BLS01_H50(baseAlgoLogic):
                 df.index = df.index + 33300
                 df = df[df.index > startTimeEpoch]
                 df_dict[stock] = df
-                df.to_csv(f"{self.fileDir['backtestResultsCandleData']}{stock}_df.csv")
+                df.to_csv(f"{self.fileDir['backtestResultsCandleData']}{stock}.csv")
                 print(f"Finished processing {stock}")
             else:
                 print(f"Failed to fetch data for {stock}")

@@ -1,6 +1,7 @@
 from backtestTools.algoLogic import optOverNightAlgoLogic
 from backtestTools.histData import getFnoBacktestData
 from backtestTools.expiry import getExpiryData
+from backtestTools.util import calculate_mtm
 from datetime import datetime, time
 import pandas as pd
 import numpy as np
@@ -124,17 +125,9 @@ class algoLogic(optOverNightAlgoLogic):
 
                         if row['CurrentPrice'] < (row['EntryPrice'] * 0.3):
                             self.openPnl.at[index, "Stoploss"] = row['EntryPrice'] * 0.4
-                            self.strategyLogger.info(f"SL1 EntryPrice:{row['EntryPrice']} CurrentPrice:{row['CurrentPrice']} NewSL:{row['EntryPrice'] * 0.4}")
-
-                        elif row['CurrentPrice'] < (row['EntryPrice'] * 0.4):
-                            self.openPnl.at[index, "Stoploss"] = row['EntryPrice'] * 0.5
-                            self.strategyLogger.info(f"SL2 EntryPrice:{row['EntryPrice']} CurrentPrice:{row['CurrentPrice']} NewSL:{row['EntryPrice'] * 0.5}")
-
-                        elif row['CurrentPrice'] < (row['EntryPrice'] * 0.5):
-                            self.openPnl.at[index, "Stoploss"] = row['EntryPrice'] * 0.6
                             self.strategyLogger.info(f"SL3 EntryPrice:{row['EntryPrice']} CurrentPrice:{row['CurrentPrice']} NewSL:{row['EntryPrice'] * 0.6}")
 
-                        elif row['CurrentPrice'] < (row['EntryPrice'] * 0.7):
+                        elif row['CurrentPrice'] < (row['EntryPrice'] * 0.5):
                             self.openPnl.at[index, "Stoploss"] = row['EntryPrice']
                             self.strategyLogger.info(f"SL4 EntryPrice:{row['EntryPrice']} CurrentPrice:{row['CurrentPrice']} NewSL:{row['EntryPrice']}")
 
@@ -206,7 +199,7 @@ class algoLogic(optOverNightAlgoLogic):
                     stageOne_p = False
                     putEntry = True
 
-                if df_15Min.at[last15MinIndexTimeData[1], "putSell"] == "putSell" and df_15Min.at[last15MinIndexTimeData[1], "putStochCrossOver"] == "putStochCrossOver" and callCounter == 0 and putEntry and putCounter < 2:
+                if df_15Min.at[last15MinIndexTimeData[1], "putSell"] == "putSell" and df_15Min.at[last15MinIndexTimeData[1], "putStochCrossOver"] == "putStochCrossOver" and callCounter == 0 and putEntry and putCounter <= 2:
                     putSym = self.getPutSym(self.timeData, baseSym, df_15Min.at[last15MinIndexTimeData[1], "c"], MonthlyExpiry, 0, 100)
 
                     try:
@@ -237,7 +230,7 @@ class algoLogic(optOverNightAlgoLogic):
                     except Exception as e:
                         self.strategyLogger.info(e)
 
-                elif df_15Min.at[last15MinIndexTimeData[1], "callSell"] == "callSell" and df_15Min.at[last15MinIndexTimeData[1], "callStochCrossOver"] == "callStochCrossOver" and putCounter == 0 and callEntry and callCounter < 2:
+                elif df_15Min.at[last15MinIndexTimeData[1], "callSell"] == "callSell" and df_15Min.at[last15MinIndexTimeData[1], "callStochCrossOver"] == "callStochCrossOver" and putCounter == 0 and callEntry and callCounter <= 2:
                     callSym = self.getCallSym(self.timeData, baseSym, df_15Min.at[last15MinIndexTimeData[1], "c"], MonthlyExpiry, 0, 100)
 
                     try:
@@ -282,7 +275,7 @@ if __name__ == "__main__":
     version = "v1"
 
     startDate = datetime(2022, 1, 1, 9, 15)
-    endDate = datetime(2025, 12, 23, 15, 30)
+    endDate = datetime(2025, 12, 15, 15, 30)
 
     algo = algoLogic(devName, strategyName, version)
 
@@ -290,6 +283,8 @@ if __name__ == "__main__":
     indexName = "NIFTY 50"
 
     closedPnl, fileDir = algo.run(startDate, endDate, baseSym, indexName)
+
+    dr = calculate_mtm(closedPnl, fileDir, timeFrame="1Min", mtm=True, equityMarket=False)
 
     endTime = datetime.now()
     print(f"Done. Ended in {endTime-startTime}")
