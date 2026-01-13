@@ -1,5 +1,5 @@
 from backtestTools.algoLogic import baseAlgoLogic, equityOverNightAlgoLogic
-from backtestTools.histData import getEquityBacktestData
+from backtestTools.histData import getEquityBacktestData, getFnoBacktestData
 from backtestTools.util import calculate_mtm
 from backtestTools.util import setup_logger
 from termcolor import colored, cprint
@@ -31,7 +31,7 @@ class BLS01_H50(baseAlgoLogic):
         logger.propagate = False
 
         def process_stock(stock, startTimeEpoch, endTimeEpoch, df_dict):
-            df = getEquityBacktestData(stock, startTimeEpoch - (86400 * 500), endTimeEpoch, "1H")
+            df = getFnoBacktestData('NIFTY 50', startTimeEpoch - (86400 * 500), endTimeEpoch, "1H")
 
             if df is not None:
                 df['datetime'] = pd.to_datetime(df['datetime'])

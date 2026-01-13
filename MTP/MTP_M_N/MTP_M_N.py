@@ -222,7 +222,7 @@ class algoLogic(optOverNightAlgoLogic):
                             target = 0.2 * data["c"]
                             stoploss = 1.3 * data["c"]
                             otm += 1
-
+ 
                         otm = 0
                         while data["c"] < 100:
                             otm -= 1
