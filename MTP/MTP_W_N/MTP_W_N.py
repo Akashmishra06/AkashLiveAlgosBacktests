@@ -216,7 +216,7 @@ class algoLogic(optOverNightAlgoLogic):
                         otm = 0
                         while data["c"] < 100:
                             otm -= 1
-                            callSym = self.getCallSym(self.timeData, baseSym, df_15Min.at[last15MinIndexTimeData[1], "c"], Currentexpiry, otm)
+                            callSym = self.getPutSym(self.timeData, baseSym, df_15Min.at[last15MinIndexTimeData[1], "c"], Currentexpiry, otm)
                             data = self.fetchAndCacheFnoHistData(callSym, lastIndexTimeData[1])
                             target = 0.3 * data["c"]
                             stoploss = 1.5 * data["c"]
@@ -238,7 +238,7 @@ class algoLogic(optOverNightAlgoLogic):
                         otm = 0
                         while data["c"] > 400:
                             otm += 1
-                            putSym = self.getPutSym(self.timeData, baseSym, df_15Min.at[last15MinIndexTimeData[1], "c"], Currentexpiry, otm)
+                            putSym = self.getCallSym(self.timeData, baseSym, df_15Min.at[last15MinIndexTimeData[1], "c"], Currentexpiry, otm)
                             data = self.fetchAndCacheFnoHistData(putSym, lastIndexTimeData[1])
                             target = 0.3 * data["c"]
                             stoploss = 1.5 * data["c"]
