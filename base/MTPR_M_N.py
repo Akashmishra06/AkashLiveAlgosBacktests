@@ -181,7 +181,7 @@ if __name__ == "__main__":
     strategyName = "MTPR_M_N"
     version = "v1"
 
-    startDate = datetime(2020, 4, 1, 9, 15)
+    startDate = datetime(2026, 1, 1, 9, 15)
     endDate = datetime(2026, 1, 30, 15, 30)
 
     algo = algoLogic(devName, strategyName, version)

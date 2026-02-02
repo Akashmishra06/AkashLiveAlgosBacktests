@@ -1,5 +1,6 @@
 import talib
 from numba import njit
+import pandas as pd
 import numpy as np
 
 
@@ -35,36 +36,31 @@ def generate_signals(k):
 
     return callsell, putsell
 
-
 def addIndicatorsAndSignals(df):
     df = df.copy()
     close = np.asarray(df["c"].values, dtype=np.float64)
 
-    rsi = talib.RSI(close, timeperiod=7).astype(np.float32)
-    df["rsi"] = rsi
+    rsi = talib.RSI(close, timeperiod=7)
+    df["rsi"] = rsi.astype(np.float32)
 
-    rsi_min = np.minimum.reduce([np.roll(rsi, i) for i in range(7)])
-    rsi_max = np.maximum.reduce([np.roll(rsi, i) for i in range(7)])
-    rsi_min[:6] = np.nan
-    rsi_max[:6] = np.nan
+    stoch_rsi_k, stoch_rsi_d = talib.STOCHRSI(
+        close,
+        timeperiod=7,     # RSI period
+        fastk_period=3,   # %K smoothing
+        fastd_period=3,   # %D smoothing
+        fastd_matype=0    # SMA
+    )
 
-    stoch_rsi = (rsi - rsi_min) / (rsi_max - rsi_min)
-    stoch_rsi_k = stoch_rsi * 100
-    kernel = np.array([1 / 3, 1 / 3, 1 / 3], dtype=np.float32)
-    k_smooth = np.convolve(stoch_rsi_k, kernel, mode="same")
-    d_line = np.convolve(k_smooth, kernel, mode="same")
+    df["stoch_rsi_k"] = stoch_rsi_k.astype(np.float32)
+    df["stoch_rsi_d"] = stoch_rsi_d.astype(np.float32)
 
-    df["stoch_rsi"] = stoch_rsi
-    df["stoch_rsi_k"] = stoch_rsi_k
-    df["stoch_rsi_k_smooth"] = k_smooth
-    df["stoch_rsi_d"] = d_line
+    k_smooth = stoch_rsi_k
 
     callsell, putsell = generate_signals(k_smooth)
     df["callSell"] = callsell
     df["putSell"] = putsell
 
     return df
-
 
 def getFinalStrike(timeDate, lastIndexTimeData, last15MinIndexTimeData, baseSym, indexPrice, Expiry,
                    AimedOTM, strikeDiff, premLimit1, premiumLimit2, side,
