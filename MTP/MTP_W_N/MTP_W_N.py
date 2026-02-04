@@ -61,6 +61,7 @@ class algoLogic(optOverNightAlgoLogic):
         df_2H["percent_sell"] = 100 - df_2H["percent_buy"]
 
         df_merge = df_2H[["percent_buy","percent_sell"]]
+        # df_merge = df_2H[["percent_buy","percent_sell"]].shift(1)
 
         df_15Min["merge_key"] = df_15Min["datetime"].dt.floor("120T")
         df_15Min = df_15Min.merge(df_merge, left_on="merge_key", right_index=True, how="left")
@@ -271,8 +272,8 @@ if __name__ == "__main__":
     strategyName = "MTP_W_N"
     version = "v1"
 
-    startDate = datetime(2022, 1, 1, 9, 15)
-    endDate = datetime(2025, 12, 15, 15, 30)
+    startDate = datetime(2025, 1, 1, 9, 15)
+    endDate = datetime(2026, 1, 30, 15, 30)
 
     algo = algoLogic(devName, strategyName, version)
 
