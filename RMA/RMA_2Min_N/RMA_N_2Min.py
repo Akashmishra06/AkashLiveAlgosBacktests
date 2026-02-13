@@ -71,7 +71,7 @@ class algoLogic(optOverNightAlgoLogic):
                         if row['CurrentPrice'] < (row['EntryPrice'] * 0.2):
                             self.openPnl.at[index, "Stoploss"] = row['EntryPrice'] * 0.3
                             self.strategyLogger.info(f"SL0 EntryPrice:{row['EntryPrice']} CurrentPrice:{row['CurrentPrice']} NewSL:{row['EntryPrice'] * 0.3}")
-                        
+
                         elif row['CurrentPrice'] < (row['EntryPrice'] * 0.3):
                             self.openPnl.at[index, "Stoploss"] = row['EntryPrice'] * 0.4
                             self.strategyLogger.info(f"SL1 EntryPrice:{row['EntryPrice']} CurrentPrice:{row['CurrentPrice']} NewSL:{row['EntryPrice'] * 0.4}")

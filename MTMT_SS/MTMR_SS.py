@@ -120,31 +120,34 @@ class algoLogic(optOverNightAlgoLogic):
                         new_sl = None
                         trail_reason = None
 
-                        # ---- Trailing conditions (SELL) ----
-                        if ltp <= entry * 0.3:
-                            new_sl = entry * 0.4
-                            trail_reason = "LTP <= 30% of Entry → SL to 40%"
+                        # ---- Trailing conditions (SELL) - rule driven ----
+                        # Rules: (trigger_pct, sl_pct) where trigger_pct is the
+                        # LTP threshold (as fraction of entry) that enables the rule
+                        # and sl_pct is the Stoploss level (as fraction of entry).
+                        trail_rules = [
+                            (0.30, 0.40),
+                            (0.40, 0.50),
+                            (0.50, 1.00),
+                        ]
 
-                        elif ltp <= entry * 0.4:
-                            new_sl = entry * 0.5
-                            trail_reason = "LTP <= 40% of Entry → SL to 50%"
+                        for trigger, sl_mul in trail_rules:
+                            if ltp <= entry * trigger:
+                                new_sl = entry * sl_mul
+                                trail_reason = (
+                                    f"LTP <= {int(trigger*100)}% of Entry → SL to {int(sl_mul*100)}%"
+                                )
+                                break
 
-                        elif ltp <= entry * 0.5:
-                            new_sl = entry
-                            trail_reason = "LTP <= 50% of Entry → SL to Cost"
-
-                        else:
+                        if new_sl is None:
                             self.strategyLogger.info(
-                                f"{self.humanTime} | NO TRAIL | "
-                                f"LTP:{ltp} not below any trail level"
+                                f"{self.humanTime} | NO TRAIL | LTP:{ltp} not below any trail level"
                             )
 
-                        # ---- Apply SL only if it tightens ----
+                        # ---- Apply SL only if it tightens (smaller value) ----
                         if new_sl is not None:
 
                             self.strategyLogger.info(
-                                f"{self.humanTime} | TRAIL CANDIDATE | "
-                                f"Reason:{trail_reason} | ProposedSL:{new_sl}"
+                                f"{self.humanTime} | TRAIL CANDIDATE | Reason:{trail_reason} | ProposedSL:{new_sl}"
                             )
 
                             if current_sl is None or pd.isna(current_sl):
@@ -161,8 +164,7 @@ class algoLogic(optOverNightAlgoLogic):
 
                             else:
                                 self.strategyLogger.info(
-                                    f"{self.humanTime} | SL NOT UPDATED | "
-                                    f"ProposedSL:{new_sl} >= ExistingSL:{current_sl}"
+                                    f"{self.humanTime} | SL NOT UPDATED | ProposedSL:{new_sl} >= ExistingSL:{current_sl}"
                                 )
 
                         # entry = row["EntryPrice"]
