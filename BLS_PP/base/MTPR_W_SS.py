@@ -2,7 +2,7 @@ from backtestTools.algoLogic import optOverNightAlgoLogic
 from backtestTools.histData import getFnoBacktestData
 from backtestTools.expiry import getExpiryData
 from backtestTools.util import calculate_mtm
-from indicators import addIndicatorsAndSignals, getFinalStrike, AdvancedMAAndMACD
+from indicators import addIndicatorsAndSignals, getFinalStrike
 from datetime import datetime, time
 
 
@@ -16,35 +16,24 @@ class algoLogic(optOverNightAlgoLogic):
         try:
             df = getFnoBacktestData(indexSym, startEpoch-(86400*10), endEpoch, "1Min")
             df_15Min = getFnoBacktestData(indexSym, startEpoch-(86400*100), endEpoch, "15Min")
-            df_2H = getFnoBacktestData(indexSym, startEpoch-(86400*100), endEpoch, "2H")
         except Exception as e:
             self.strategyLogger.info(f"Data not found for {baseSym} in range {startDate} to {endDate}")
             raise Exception(e)
 
         df_15Min = addIndicatorsAndSignals(df_15Min)
-        df_2H = AdvancedMAAndMACD(df_2H)
 
         df_15Min = df_15Min[df_15Min.index >= startEpoch]
         df.to_csv(f"{self.fileDir['backtestResultsCandleData']}{indexName}_1Min.csv")
         df_15Min.to_csv(f"{self.fileDir['backtestResultsCandleData']}{indexName}_15Min.csv")
-        df_2H.to_csv(f"{self.fileDir['backtestResultsCandleData']}{indexName}_2H.csv")
 
         lastIndexTimeData = [0, 0]
         last15MinIndexTimeData = [0, 0]
-        last2HIndexTimeData = [0, 0]
-
-        regime = "Normal"
 
         MonthlyExpiry = getExpiryData(startEpoch, baseSym)['MonthLast']
         expiryDatetime = datetime.strptime(MonthlyExpiry, "%d%b%y").replace(hour=15, minute=20)
         expiryEpoch= expiryDatetime.timestamp()
         lotSize = int(getExpiryData(self.timeData, baseSym)["LotSize"])
         oneeExpiry = getExpiryData(self.timeData+86400, baseSym)['CurrentExpiry']
-
-        AimedOTM = 0
-        strikeDiff = 100
-        premLimit1 = 100
-        premiumLimit2 = 400
 
         for timeData in df.index: 
 
@@ -58,24 +47,12 @@ class algoLogic(optOverNightAlgoLogic):
             lastIndexTimeData.pop(0)
             lastIndexTimeData.append(timeData-60)
             timeEpochSubstract = (timeData-900)
-            timeEpochSubstract2H = (timeData-(7200))
             if timeEpochSubstract in df_15Min.index:
                 last15MinIndexTimeData.pop(0)
                 last15MinIndexTimeData.append(timeEpochSubstract)
-            if timeEpochSubstract2H in df_2H.index:
-                last2HIndexTimeData.pop(0)
-                last2HIndexTimeData.append(timeEpochSubstract2H)
 
             if (self.humanTime.time() < time(9, 16)) | (self.humanTime.time() > time(15, 25)):
                 continue
-
-            if timeEpochSubstract2H in df_2H.index:
-                if df_2H.at[timeEpochSubstract2H, "percent_buy"] > df_2H.at[timeEpochSubstract2H, "percent_sell"]:
-                    regime = "Bullish"
-                elif df_2H.at[timeEpochSubstract2H, "percent_buy"] < df_2H.at[timeEpochSubstract2H, "percent_sell"]:
-                    regime = "Bearish"
-                else:
-                    regime = "Normal"
 
             if not self.openPnl.empty:
                 for index, row in self.openPnl.iterrows():
@@ -128,11 +105,11 @@ class algoLogic(optOverNightAlgoLogic):
 
                     elif last15MinIndexTimeData[1] in df_15Min.index:
 
-                        if regime == "Bullish" and (symSide == "CE"):
+                        if (df_15Min.at[last15MinIndexTimeData[1], "putSell"] == 1) & (symSide == "CE"):
                             exitType = "CE_exit"
                             self.exitOrder(index, exitType)
 
-                        elif regime == "Bearish" and (symSide == "PE"):
+                        elif (df_15Min.at[last15MinIndexTimeData[1], "callSell"] == 1) & (symSide == "PE"):
                             exitType = "PE_exit"
                             self.exitOrder(index, exitType)
 
@@ -147,12 +124,11 @@ class algoLogic(optOverNightAlgoLogic):
                 callSellSignal = df_15Min.at[last_idx, "callSell"]
 
                 # PUT SELL
-                if putSellSignal == 1 and putCounter < 2 and regime == "Bullish":
-                    print("entering put sell")
+                if putSellSignal == 1 and putCounter < 2:
                     try:
                         putSym = getFinalStrike(
                             self.timeData, lastIndexTimeData[1], baseSym, underlyingPrice,
-                            Currentexpiry, AimedOTM, strikeDiff, premLimit1, premiumLimit2, "PE",
+                            Currentexpiry, 0, 500, 100, 600, "PE",
                             self.getCallSym, self.getPutSym, self.fetchAndCacheFnoHistData, self.strategyLogger
                         )
                         if putSym is not None:
@@ -164,12 +140,12 @@ class algoLogic(optOverNightAlgoLogic):
                     except Exception as e:
                         self.strategyLogger.info(e)
 
-                elif callSellSignal == 1 and callCounter < 2 and regime == "Bearish":
+                elif callSellSignal == 1 and callCounter < 2:
                     try:
                         callSym = getFinalStrike(self.timeData, lastIndexTimeData[1], baseSym, underlyingPrice,
-                            Currentexpiry, AimedOTM, strikeDiff, premLimit1, premiumLimit2, "CE",
+                            Currentexpiry, 0, 500, 100, 600, "CE",
                             self.getCallSym, self.getPutSym, self.fetchAndCacheFnoHistData, self.strategyLogger)
-
+                        
                         if callSym is not None:
                             data = self.fetchAndCacheFnoHistData(callSym, lastIndexTimeData[1])
                             target = 0.2 * data["c"]
@@ -189,20 +165,20 @@ if __name__ == "__main__":
     startTime = datetime.now()
 
     devName = "AM"
-    strategyName = "MTPR_W_N"
+    strategyName = "MTPR_M_SS"
     version = "v1"
 
-    startDate = datetime(2022, 1, 1, 9, 15)
-    endDate = datetime(2026, 2, 15, 15, 30)
+    startDate = datetime(2024, 1, 1, 9, 15)
+    endDate = datetime(2026, 1, 30, 15, 30)
 
     algo = algoLogic(devName, strategyName, version)
 
-    baseSym = "NIFTY"
-    indexName = "NIFTY 50"
+    baseSym = "SENSEX"
+    indexName = "SENSEX"
 
     closedPnl, fileDir = algo.run(startDate, endDate, baseSym, indexName)
 
-    dr = calculate_mtm(closedPnl, fileDir, timeFrame="1Min", mtm=True, equityMarket=False)
+    dr = calculate_mtm(closedPnl, fileDir, timeFrame="15Min", mtm=True, equityMarket=False)
 
     endTime = datetime.now()
     print(f"Done. Ended in {endTime-startTime}")

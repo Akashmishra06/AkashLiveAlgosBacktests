@@ -192,7 +192,7 @@ if __name__ == "__main__":
     strategyName = "MTPR_W_N"
     version = "v1"
 
-    startDate = datetime(2022, 1, 1, 9, 15)
+    startDate = datetime(2026, 1, 1, 9, 15)
     endDate = datetime(2026, 2, 15, 15, 30)
 
     algo = algoLogic(devName, strategyName, version)
@@ -202,7 +202,7 @@ if __name__ == "__main__":
 
     closedPnl, fileDir = algo.run(startDate, endDate, baseSym, indexName)
 
-    dr = calculate_mtm(closedPnl, fileDir, timeFrame="1Min", mtm=True, equityMarket=False)
+    dr = calculate_mtm(closedPnl, fileDir, timeFrame="15Min", mtm=True, equityMarket=False)
 
     endTime = datetime.now()
     print(f"Done. Ended in {endTime-startTime}")

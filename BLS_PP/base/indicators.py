@@ -102,6 +102,7 @@ def getFinalStrike(timeDate, lastIndexTimeData, baseSym, indexPrice, Expiry,
         return None
 
 
+
 def AdvancedMAAndMACD(df_2H):
 
     def get_ma(series, length):
