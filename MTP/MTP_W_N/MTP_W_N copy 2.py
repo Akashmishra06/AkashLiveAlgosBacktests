@@ -6,7 +6,7 @@ from datetime import datetime, time
 import pandas as pd
 import numpy as np
 import talib
-
+from indicator import calculate_market_2H_strength
 
 class algoLogic(optOverNightAlgoLogic):
 
@@ -18,48 +18,38 @@ class algoLogic(optOverNightAlgoLogic):
         startEpoch = startDate.timestamp()
         endEpoch = endDate.timestamp()
 
+
         try:
-            df = getFnoBacktestData(indexSym, startEpoch-(86400*10), endEpoch, "1Min")
-            df_15Min = getFnoBacktestData(indexSym, startEpoch-(86400*100), endEpoch, "15Min")
-            df_2H = getFnoBacktestData(indexSym, startEpoch-(86400*100), endEpoch, "2H")
+            df = getFnoBacktestData(
+                indexSym,
+                startEpoch - (86400),
+                endEpoch,
+                "1Min"
+            )
+
+            df_15Min = getFnoBacktestData(
+                indexSym,
+                startEpoch - (86400 * 100),
+                endEpoch,
+                "15Min"
+            )
+
+            df_2H = getFnoBacktestData(
+                indexSym,
+                startEpoch - (86400 * 100),
+                endEpoch,
+                "2H"
+            )
+
+            print(df_2H)
         except Exception as e:
-            self.strategyLogger.info(f"Data not found for {baseSym} in range {startDate} to {endDate}")
+            self.strategyLogger.info(
+                f"Data not found for {baseSym} in range {startDate} to {endDate}"
+            )
             raise Exception(e)
 
-        df_15Min["datetime"] = pd.to_datetime(df_15Min["datetime"])
-        df_15Min = df_15Min.sort_values("datetime")
+        df_15Min = calculate_market_2H_strength(df_15Min)
 
-        def get_ma(series, length):
-            return talib.SMA(series, timeperiod=length)
-
-        def macd_pair(series, fast, slow):
-            macd, signal, hist = talib.MACD(series, fastperiod=fast, slowperiod=slow, signalperiod=9)
-            return hist
-
-        df_2H["ma20"]  = get_ma(df_2H["c"], 20)
-        df_2H["ma50"]  = get_ma(df_2H["c"], 50)
-        df_2H["ma100"] = get_ma(df_2H["c"], 100)
-        df_2H["ma150"] = get_ma(df_2H["c"], 150)
-        df_2H["ma200"] = get_ma(df_2H["c"], 200)
-
-        df_2H["hist20_50"]   = macd_pair(df_2H["c"], 20, 50)
-        df_2H["hist20_100"]  = macd_pair(df_2H["c"], 20, 100)
-        df_2H["hist20_200"]  = macd_pair(df_2H["c"], 20, 200)
-        df_2H["hist50_100"]  = macd_pair(df_2H["c"], 50, 100)
-        df_2H["hist50_200"]  = macd_pair(df_2H["c"], 50, 200)
-        df_2H["hist100_200"] = macd_pair(df_2H["c"], 100, 200)
-        df_2H["hist50_150"]  = macd_pair(df_2H["c"], 50, 150)
-
-        ma_cols = ["ma20","ma50","ma100","ma150","ma200"]
-        macd_cols = ["hist20_50","hist20_100","hist20_200","hist50_100","hist50_200","hist100_200","hist50_150"]
-
-        df_2H["ma_buy"] = (df_2H["c"].to_numpy().reshape(-1,1) > df_2H[ma_cols].to_numpy()).sum(axis=1)
-        df_2H["macd_buy"] = (df_2H[macd_cols].to_numpy() > 0).sum(axis=1)
-
-        df_2H["percent_buy"] = ((df_2H["ma_buy"] + df_2H["macd_buy"]) / 12) * 100
-        df_2H["percent_sell"] = 100 - df_2H["percent_buy"]
-
-        # df_merge = df_2H[["percent_buy","percent_sell"]].shift(1)
         df_15Min["RSI"] = talib.RSI(df_15Min["c"], timeperiod=7)
 
         rsi_min = df_15Min["RSI"].rolling(7).min()
@@ -70,9 +60,9 @@ class algoLogic(optOverNightAlgoLogic):
         df_15Min["StochRSI_K_Smoothed"] = df_15Min["StochRSI_K"].rolling(3).mean()
         df_15Min["StochRSI_D"] = df_15Min["StochRSI_K_Smoothed"].rolling(3).mean()
 
-        # # df_15Min.dropna(inplace=True)
-        # df_15Min['callSell'] = np.where((df_15Min['percent_buy'] < df_15Min['percent_sell']), "callSell", "")
-        # df_15Min['putSell'] = np.where((df_15Min['percent_buy'] > df_15Min['percent_sell']), "putSell", "")
+        # df_15Min.dropna(inplace=True)
+        df_15Min['callSell'] = np.where((df_15Min['percent_buy'] < df_15Min['percent_sell']), "callSell", "")
+        df_15Min['putSell'] = np.where((df_15Min['percent_buy'] > df_15Min['percent_sell']), "putSell", "")
 
         df_15Min['putStochCrossOver'] = np.where((df_15Min['StochRSI_K_Smoothed'] > 20) & (df_15Min['StochRSI_K_Smoothed'].shift(1) <= 20), "putStochCrossOver", "")
         df_15Min['callStochCrossOver'] = np.where((df_15Min['StochRSI_K_Smoothed'] < 80) & (df_15Min['StochRSI_K_Smoothed'].shift(1) >= 80), "callStochCrossOver", "")
@@ -80,18 +70,14 @@ class algoLogic(optOverNightAlgoLogic):
         df_15Min = df_15Min[df_15Min.index > startEpoch]
         df.to_csv(f"{self.fileDir['backtestResultsCandleData']}{indexName}_1Min.csv")
         df_15Min.to_csv(f"{self.fileDir['backtestResultsCandleData']}{indexName}_15Min.csv")
-        df_2H.to_csv(f"{self.fileDir['backtestResultsCandleData']}{indexName}_2H.csv")
 
         lastIndexTimeData = [0, 0]
         last15MinIndexTimeData = [0, 0]
-        last2HIndexTimeData = [0, 0]
 
         callEntry = False
         stageOne_c = False
         putEntry = False
         stageOne_p = False
-
-        regime = None
 
         Currentexpiry = getExpiryData(startEpoch, baseSym)['CurrentExpiry']
         expiryDatetime = datetime.strptime(Currentexpiry, "%d%b%y").replace(hour=15, minute=20)
@@ -110,24 +96,12 @@ class algoLogic(optOverNightAlgoLogic):
             lastIndexTimeData.pop(0)
             lastIndexTimeData.append(timeData-60)
             timeEpochSubstract = (timeData-900)
-            timeEpochSubstract2H = (timeData-(7200))
             if timeEpochSubstract in df_15Min.index:
                 last15MinIndexTimeData.pop(0)
                 last15MinIndexTimeData.append(timeEpochSubstract)
-            if timeEpochSubstract2H in df_2H.index:
-                last2HIndexTimeData.pop(0)
-                last2HIndexTimeData.append(timeEpochSubstract2H)
 
             if (self.humanTime.time() < time(9, 16)) | (self.humanTime.time() > time(15, 25)):
                 continue
-
-            if (timeEpochSubstract2H in df_2H.index):
-                if df_2H.at[last2HIndexTimeData[1], "percent_buy"] > df_2H.at[last2HIndexTimeData[1], "percent_sell"]:
-                    regime = "bull"
-                if df_2H.at[last2HIndexTimeData[1], "percent_buy"] < df_2H.at[last2HIndexTimeData[1], "percent_sell"]:
-                    regime = "bear"
-                if df_2H.at[last2HIndexTimeData[1], "percent_buy"] == df_2H.at[last2HIndexTimeData[1], "percent_sell"]:
-                    regime = "sideways"
 
             if not self.openPnl.empty:
                 for index, row in self.openPnl.iterrows():
@@ -180,11 +154,11 @@ class algoLogic(optOverNightAlgoLogic):
 
                     elif (timeEpochSubstract in df_15Min.index):
 
-                        if regime == "bull" and (symSide == "CE"):
+                        if (df_15Min.at[last15MinIndexTimeData[1], "putSell"] == "putSell") & (symSide == "CE"):
                             exitType = "CE_exit"
                             self.exitOrder(index, exitType)
 
-                        elif regime == "bear" and (symSide == "PE"):
+                        elif (df_15Min.at[last15MinIndexTimeData[1], "callSell"] == "callSell") & (symSide == "PE"):
                             exitType = "PE_exit"
                             self.exitOrder(index, exitType)
 
@@ -206,7 +180,7 @@ class algoLogic(optOverNightAlgoLogic):
                     stageOne_p = False
                     putEntry = True
 
-                if regime == "bull" and df_15Min.at[last15MinIndexTimeData[1], "putStochCrossOver"] == "putStochCrossOver" and callCounter == 0 and putEntry and putCounter <= 2:
+                if df_15Min.at[last15MinIndexTimeData[1], "putSell"] == "putSell" and df_15Min.at[last15MinIndexTimeData[1], "putStochCrossOver"] == "putStochCrossOver" and callCounter == 0 and putEntry and putCounter <= 2:
 
                     try:
                         putSym = self.getPutSym(self.timeData, baseSym, df_15Min.at[last15MinIndexTimeData[1], "c"], expiry = Currentexpiry)
@@ -237,7 +211,7 @@ class algoLogic(optOverNightAlgoLogic):
                     except Exception as e:
                         self.strategyLogger.info(e)
 
-                elif regime == "bear" and df_15Min.at[last15MinIndexTimeData[1], "callStochCrossOver"] == "callStochCrossOver" and putCounter == 0 and callEntry and callCounter <= 2:
+                elif df_15Min.at[last15MinIndexTimeData[1], "callSell"] == "callSell" and df_15Min.at[last15MinIndexTimeData[1], "callStochCrossOver"] == "callStochCrossOver" and putCounter == 0 and callEntry and callCounter <= 2:
 
                     try:
                         callSym = self.getCallSym(self.timeData, baseSym, df_15Min.at[last15MinIndexTimeData[1], "c"], expiry = Currentexpiry)
